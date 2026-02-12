@@ -2,25 +2,12 @@
 
 Lightweight .NET client for LM Studio's chat API. This library is transport-only: it manages HTTP, SSE streaming, and response parsing. Prompts, tool routing, and app-specific behavior should live in the calling application.
 
-LM Studio REST API docs:
-```text
-https://lmstudio.ai/docs/developer/rest
-```
+> [!NOTE]
+> Portions of this project were developed with LLMs such as Codex 5.2, GLM 4.7, and Qwen3.
 
-## Key Concepts
-- **Streaming**: Use `StreamAsync` to receive `LmStudioStreamChunk` values as the model responds.
-- **Response IDs**: A `ResponseId` chunk is emitted when the server includes an ID.
-- **Warnings**: The client emits a warning chunk if the stream repeats output chunks or yields no payload.
+LM Studio REST API docs: `https://lmstudio.ai/docs/developer/rest`
 
-## Authentication
-Bearer tokens are only required if your LM Studio server requires authentication. If enabled, set `BearerToken` in `LmStudioClientOptions` and handle `LmStudioAuthenticationException` for missing/invalid tokens.
-
-## Transport Security
-- Prefer `https://` hosts.
-- `http://` is allowed by default only for loopback hosts (`localhost`, `127.0.0.1`, `::1`).
-- For non-loopback HTTP hosts (for example `http://192.168.0.123`), set `AllowInsecureHttp = true` in `LmStudioClientOptions`.
-
-## Basic Usage
+## Quick Start
 ```csharp
 using LmStudioSharp;
 
@@ -58,10 +45,12 @@ await foreach (var chunk in client.StreamAsync(request))
 }
 ```
 
-## Streaming Contract
-- `StreamAsync` yields chunks in the order they are received from LM Studio.
-- `Reasoning` and `Output` chunks may interleave depending on the model.
-- `Warning` chunks indicate unusual conditions (e.g., repeating output or no payload).
+## Streaming
+- Use `StreamAsync` to receive `LmStudioStreamChunk` values as the model responds.
+- Chunks are yielded in the order received from LM Studio.
+- `Reasoning` and `Output` chunks may interleave depending on model behavior.
+- A `ResponseId` chunk is emitted when the server includes an ID.
+- A `Warning` chunk is emitted for unusual stream conditions (for example repeating output chunks or no payload).
 
 ## Non-Streaming Usage
 ```csharp
@@ -92,6 +81,15 @@ foreach (var model in models?.Models ?? [])
 }
 ```
 
+## Security
+### Authentication
+Bearer tokens are only required if your LM Studio server requires authentication. If enabled, set `BearerToken` in `LmStudioClientOptions` and handle `LmStudioAuthenticationException` for missing/invalid tokens.
+
+### Transport
+- Prefer `https://` hosts.
+- `http://` is allowed by default only for loopback hosts (`localhost`, `127.0.0.1`, `::1`).
+- For non-loopback HTTP hosts (for example `http://192.168.0.123`), set `AllowInsecureHttp = true` in `LmStudioClientOptions`.
+
 ## Error Handling
 - `StreamAsync` throws `LmStudioRequestException` on HTTP failures.
 - `RunAsync` returns `null` when the response cannot be parsed or the request fails.
@@ -102,12 +100,9 @@ foreach (var model in models?.Models ?? [])
 - Use the app layer to implement prompts, tool routing, and any persistence.
 - Inject your own `HttpClient` if you need custom handlers or lifetime management.
 
-## Development Note
-Portions of this project were developed with LLMs such as Codex 5.2, GLM 4.7 and Qwen3
-
-## Contributing
-Pull requests and issues are open and accepted on this project.
-
 ## Releases
 Publishing a GitHub Release triggers the `Release Build` workflow in `.github/workflows/release.yml`.
 That workflow builds the library in `Release` mode and attaches a zip bundle (DLL + symbols/docs when present) to the release.
+
+## Contributing
+Pull requests and issues are open and accepted on this project.
