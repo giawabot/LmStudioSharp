@@ -15,6 +15,11 @@ https://lmstudio.ai/docs/developer/rest
 ## Authentication
 Bearer tokens are only required if your LM Studio server requires authentication. If enabled, set `BearerToken` in `LmStudioClientOptions` and handle `LmStudioAuthenticationException` for missing/invalid tokens.
 
+## Transport Security
+- Prefer `https://` hosts.
+- `http://` is allowed by default only for loopback hosts (`localhost`, `127.0.0.1`, `::1`).
+- For non-loopback HTTP hosts (for example `http://192.168.0.123`), set `AllowInsecureHttp = true` in `LmStudioClientOptions`.
+
 ## Basic Usage
 ```csharp
 using LmStudioSharp;
