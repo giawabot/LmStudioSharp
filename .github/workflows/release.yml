@@ -77,6 +77,7 @@ jobs:
       - name: Authenticate to NuGet.org (Trusted Publishing)
         if: github.event_name == 'release'
         uses: NuGet/login@v1
+        id: nuget_login
         with:
           user: giawa
 
@@ -84,5 +85,6 @@ jobs:
         if: github.event_name == 'release'
         run: >
           dotnet nuget push artifacts/*.nupkg
+          --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate
