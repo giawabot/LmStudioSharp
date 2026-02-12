@@ -11,9 +11,12 @@ public sealed class LmStudioClient : IDisposable
 {
     private const string ChatEndpoint = "/api/v1/chat";
     private const string ModelsEndpoint = "/api/v1/models";
+    private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _serializerOptions;
     private readonly bool _ownsHttpClient;
+    private readonly int _maxResponseBodyBytes;
+    private readonly int _maxSseEventBytes;
     private bool _disposed;
 
     /// <summary>
@@ -49,6 +52,20 @@ public sealed class LmStudioClient : IDisposable
             throw new ArgumentException("LM Studio host is required.", nameof(options));
         }
 
+        if (options.MaxResponseBodyBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                "MaxResponseBodyBytes must be greater than zero.");
+        }
+
+        if (options.MaxSseEventBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                "MaxSseEventBytes must be greater than zero.");
+        }
+
         if (httpClient is null)
         {
             _httpClient = new HttpClient
@@ -79,6 +96,9 @@ public sealed class LmStudioClient : IDisposable
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNameCaseInsensitive = true,
         };
+
+        _maxResponseBodyBytes = options.MaxResponseBodyBytes;
+        _maxSseEventBytes = options.MaxSseEventBytes;
     }
 
     /// <summary>
@@ -191,7 +211,16 @@ public sealed class LmStudioClient : IDisposable
         }
 
         using var responseScope = response;
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        string responseBody;
+        try
+        {
+            responseBody = await ReadResponseBodyAsync(response.Content, cancellationToken);
+        }
+        catch (LmStudioRequestException)
+        {
+            return null;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             ThrowIfAuthenticationError(responseBody, response.StatusCode);
@@ -258,7 +287,7 @@ public sealed class LmStudioClient : IDisposable
         using var responseScope = response;
         if (!response.IsSuccessStatusCode)
         {
-            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseBody = await ReadResponseBodyAsync(response.Content, cancellationToken);
             ThrowIfAuthenticationError(responseBody, response.StatusCode);
             if (allowReasoningRetry &&
                 request.Reasoning is not null &&
@@ -286,6 +315,7 @@ public sealed class LmStudioClient : IDisposable
         var repeatChunkCount = 0;
         string? currentEventType = null;
         var currentEventData = new StringBuilder();
+        var currentEventDataBytes = 0;
         var streamedAnySegments = false;
         var stoppedDueToRepeatingChunk = false;
 
@@ -339,6 +369,7 @@ public sealed class LmStudioClient : IDisposable
 
                     currentEventType = null;
                     currentEventData.Clear();
+                    currentEventDataBytes = 0;
                 }
 
                 continue;
@@ -352,17 +383,34 @@ public sealed class LmStudioClient : IDisposable
 
             if (line.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             {
+                var dataSegment = StripSseDataPrefixWhitespace(line);
+                var addedBytes = Utf8NoBom.GetByteCount(dataSegment);
+
                 if (currentEventData.Length > 0)
                 {
                     currentEventData.AppendLine();
+                    addedBytes += Utf8NoBom.GetByteCount(Environment.NewLine);
                 }
 
-                currentEventData.Append(StripSseDataPrefixWhitespace(line));
+                currentEventDataBytes += addedBytes;
+                if (currentEventDataBytes > _maxSseEventBytes)
+                {
+                    throw new LmStudioRequestException(
+                        $"SSE event exceeded max size of {_maxSseEventBytes} bytes.");
+                }
+
+                currentEventData.Append(dataSegment);
                 continue;
             }
 
             if (line.TrimStart().StartsWith("{", StringComparison.Ordinal))
             {
+                if (Utf8NoBom.GetByteCount(line) > _maxSseEventBytes)
+                {
+                    throw new LmStudioRequestException(
+                        $"SSE payload exceeded max size of {_maxSseEventBytes} bytes.");
+                }
+
                 if (TryHandleFullResponse(line, ref responseId, out var fullChunks, out var streamedNow))
                 {
                     foreach (var chunk in fullChunks)
@@ -527,7 +575,7 @@ public sealed class LmStudioClient : IDisposable
         }
 
         using var responseScope = response;
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        var responseBody = await ReadResponseBodyAsync(response.Content, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             ThrowIfAuthenticationError(responseBody, response.StatusCode);
@@ -704,6 +752,39 @@ public sealed class LmStudioClient : IDisposable
                 statusCode,
                 responseBody);
         }
+    }
+
+    private async Task<string> ReadResponseBodyAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        if (content.Headers.ContentLength is long contentLength &&
+            contentLength > _maxResponseBodyBytes)
+        {
+            throw new LmStudioRequestException(
+                $"Response body exceeded max size of {_maxResponseBodyBytes} bytes.");
+        }
+
+        await using var stream = await content.ReadAsStreamAsync(cancellationToken);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[8192];
+
+        while (true)
+        {
+            var bytesRead = await stream.ReadAsync(chunk.AsMemory(0, chunk.Length), cancellationToken);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            if (buffer.Length + bytesRead > _maxResponseBodyBytes)
+            {
+                throw new LmStudioRequestException(
+                    $"Response body exceeded max size of {_maxResponseBodyBytes} bytes.");
+            }
+
+            await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
+        }
+
+        return Utf8NoBom.GetString(buffer.ToArray());
     }
 
     private LmStudioClientError? TryParseError(string? responseBody)
