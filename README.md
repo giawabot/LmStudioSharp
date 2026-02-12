@@ -107,3 +107,7 @@ Portions of this project were developed with LLMs such as Codex 5.2, GLM 4.7 and
 
 ## Contributing
 Pull requests and issues are open and accepted on this project.
+
+## Releases
+Publishing a GitHub Release triggers the `Release Build` workflow in `.github/workflows/release.yml`.
+That workflow builds the library in `Release` mode and attaches a zip bundle (DLL + symbols/docs when present) to the release.
