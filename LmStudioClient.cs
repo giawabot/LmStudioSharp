@@ -52,6 +52,8 @@ public sealed class LmStudioClient : IDisposable
             throw new ArgumentException("LM Studio host is required.", nameof(options));
         }
 
+        var optionsHostUri = new Uri(options.Host, UriKind.Absolute);
+
         if (options.MaxResponseBodyBytes <= 0)
         {
             throw new ArgumentOutOfRangeException(
@@ -68,9 +70,10 @@ public sealed class LmStudioClient : IDisposable
 
         if (httpClient is null)
         {
+            EnsureAllowedBaseAddress(optionsHostUri, options.AllowInsecureHttp);
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri(options.Host, UriKind.Absolute),
+                BaseAddress = optionsHostUri,
                 Timeout = Timeout.InfiniteTimeSpan,
             };
             _ownsHttpClient = true;
@@ -80,7 +83,12 @@ public sealed class LmStudioClient : IDisposable
             _httpClient = httpClient;
             if (_httpClient.BaseAddress is null)
             {
-                _httpClient.BaseAddress = new Uri(options.Host, UriKind.Absolute);
+                EnsureAllowedBaseAddress(optionsHostUri, options.AllowInsecureHttp);
+                _httpClient.BaseAddress = optionsHostUri;
+            }
+            else
+            {
+                EnsureAllowedBaseAddress(_httpClient.BaseAddress, options.AllowInsecureHttp);
             }
         }
 
@@ -785,6 +793,45 @@ public sealed class LmStudioClient : IDisposable
         }
 
         return Utf8NoBom.GetString(buffer.ToArray());
+    }
+
+    private static void EnsureAllowedBaseAddress(Uri baseAddress, bool allowInsecureHttp)
+    {
+        if (string.Equals(baseAddress.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!string.Equals(baseAddress.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(
+                "LM Studio host must use http or https.",
+                nameof(baseAddress));
+        }
+
+        if (allowInsecureHttp || IsLoopbackHost(baseAddress))
+        {
+            return;
+        }
+
+        throw new ArgumentException(
+            "HTTP is only allowed for loopback hosts by default. Set AllowInsecureHttp=true to allow non-loopback HTTP.",
+            nameof(baseAddress));
+    }
+
+    private static bool IsLoopbackHost(Uri uri)
+    {
+        if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (IPAddress.TryParse(uri.Host, out var address))
+        {
+            return IPAddress.IsLoopback(address);
+        }
+
+        return false;
     }
 
     private LmStudioClientError? TryParseError(string? responseBody)
