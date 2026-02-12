@@ -4,6 +4,20 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>LmStudioSharp</PackageId>
+    <Authors>giawabot</Authors>
+    <Description>Lightweight .NET client for LM Studio's chat API with HTTP transport, SSE streaming, and response parsing.</Description>
+    <PackageTags>lmstudio;llm;ai;chat;dotnet</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/giawabot/LmStudioSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/giawabot/LmStudioSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
