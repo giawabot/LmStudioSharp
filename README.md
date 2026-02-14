@@ -5,7 +5,17 @@ Lightweight .NET client for LM Studio's chat API. This library is transport-only
 > [!NOTE]
 > Portions of this project were developed with LLMs such as Codex 5.2, GLM 4.7, and Qwen3.
 
-LM Studio REST API docs: `https://lmstudio.ai/docs/developer/rest`
+LM Studio REST API docs: [https://lmstudio.ai/docs/developer/rest](https://lmstudio.ai/docs/developer/rest)
+
+## Installation
+```bash
+dotnet add package LmStudioSharp
+```
+
+For the latest prerelease:
+```bash
+dotnet add package LmStudioSharp --prerelease
+```
 
 ## Quick Start
 ```csharp
