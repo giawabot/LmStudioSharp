@@ -727,6 +727,7 @@ public sealed class LmStudioClient : IDisposable
             Reasoning = request.Reasoning,
             Temperature = request.Temperature,
             RepeatPenalty = request.RepeatPenalty,
+            MaxOutputTokens = request.MaxOutputTokens,
             ContextLength = request.ContextLength,
             PreviousResponseId = request.PreviousResponseId,
             TopP = request.TopP,
