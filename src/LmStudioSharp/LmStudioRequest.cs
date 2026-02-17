@@ -25,7 +25,7 @@ public sealed class LmStudioRequest
     [JsonPropertyName("repeat_penalty")]
     public decimal RepeatPenalty { get; set; } = 0m;
 
-    [JsonPropertyName("max_output_tokens ")]
+    [JsonPropertyName("max_output_tokens")]
     public int MaxOutputTokens { get; set; } = 0;
 
     [JsonPropertyName("top_p")]
