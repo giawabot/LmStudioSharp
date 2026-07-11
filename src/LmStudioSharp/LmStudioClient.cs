@@ -718,12 +718,10 @@ public sealed class LmStudioClient : IDisposable
 
     private static LmStudioRequest CloneRequest(LmStudioRequest request)
     {
-        return new LmStudioRequest
+        var clone = new LmStudioRequest
         {
             Model = request.Model,
             SystemPrompt = request.SystemPrompt,
-            Input = request.Input,
-            Integrations = request.Integrations is null ? null : [.. request.Integrations],
             Reasoning = request.Reasoning,
             Temperature = request.Temperature,
             RepeatPenalty = request.RepeatPenalty,
@@ -733,6 +731,22 @@ public sealed class LmStudioClient : IDisposable
             TopP = request.TopP,
             Stream = request.Stream,
         };
+
+        if (request.Input is string stringInput)
+        {
+            clone.Input = stringInput;
+        }
+        else if (request.Input is List<LmStudioInputItem> items)
+        {
+            clone.Input = new List<LmStudioInputItem>(items);
+        }
+
+        if (request.Integrations is not null)
+        {
+            clone.Integrations = [.. request.Integrations];
+        }
+
+        return clone;
     }
 
     internal static bool HasSegmentContent(string? content)
