@@ -91,6 +91,34 @@ foreach (var model in models?.Models ?? [])
 }
 ```
 
+## Image Input (VLM)
+Vision-Language Models (VLMs) can accept images as input. Set `Input` to a list of `LmStudioInputItem` objects:
+
+```csharp
+var request = new LmStudioRequest
+{
+    Model = "qwen/qwen3-vl-4b",
+    Input = new List<LmStudioInputItem>
+    {
+        new LmStudioTextInput("Describe this image"),
+        LmStudioImageHelper.LoadImage("path/to/image.png")
+    },
+    Stream = true,
+};
+```
+
+Load images asynchronously:
+```csharp
+var image = await LmStudioImageHelper.LoadImageAsync("photo.jpg");
+```
+
+Or from a base64 string:
+```csharp
+var image = LmStudioImageHelper.FromBase64(base64String, "image/png");
+```
+
+Supported formats: PNG, JPEG, BMP, WebP, GIF.
+
 ## Security
 ### Authentication
 Bearer tokens are only required if your LM Studio server requires authentication. If enabled, set `BearerToken` in `LmStudioClientOptions` and handle `LmStudioAuthenticationException` for missing/invalid tokens.
