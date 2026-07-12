@@ -19,7 +19,7 @@ public sealed class LmStudioRequest
     public string[]? Integrations { get; set; }
 
     [JsonPropertyName("reasoning")]
-    public string? Reasoning { get; set; } = "on";
+    public string? Reasoning { get; set; }
 
     [JsonPropertyName("temperature")]
     public decimal Temperature { get; set; } = 0.7m;
