@@ -28,6 +28,10 @@ public sealed class LmStudioRequest
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public decimal? RepeatPenalty { get; set; }
 
+    [JsonPropertyName("presence_penalty")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public decimal? PresencePenalty { get; set; }
+
     [JsonPropertyName("max_output_tokens")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int MaxOutputTokens { get; set; } = 0;
