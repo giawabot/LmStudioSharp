@@ -35,7 +35,7 @@ public sealed class LmStudioModel
     public string? ParamsString { get; set; }
 
     [JsonPropertyName("loaded_instances")]
-    public List<object> LoadedInstances { get; set; } = [];
+    public List<LmStudioLoadedInstance> LoadedInstances { get; set; } = [];
 
     [JsonPropertyName("max_context_length")]
     public int? MaxContextLength { get; set; }
@@ -72,5 +72,47 @@ public sealed class LmStudioCapabilities
 
     [JsonPropertyName("trained_for_tool_use")]
     public bool? TrainedForToolUse { get; set; }
+
+    [JsonPropertyName("reasoning")]
+    public LmStudioReasoning? Reasoning { get; set; }
+}
+
+public sealed class LmStudioReasoning
+{
+    [JsonPropertyName("allowed_options")]
+    public List<string> AllowedOptions { get; set; } = [];
+
+    [JsonPropertyName("default")]
+    public string? Default { get; set; }
+}
+
+public sealed class LmStudioLoadedInstance
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("config")]
+    public LmStudioLoadedInstanceConfig? Config { get; set; }
+}
+
+public sealed class LmStudioLoadedInstanceConfig
+{
+    [JsonPropertyName("context_length")]
+    public int? ContextLength { get; set; }
+
+    [JsonPropertyName("eval_batch_size")]
+    public int? EvalBatchSize { get; set; }
+
+    [JsonPropertyName("parallel")]
+    public int? Parallel { get; set; }
+
+    [JsonPropertyName("flash_attention")]
+    public bool? FlashAttention { get; set; }
+
+    [JsonPropertyName("num_experts")]
+    public int? NumExperts { get; set; }
+
+    [JsonPropertyName("offload_kv_cache_to_gpu")]
+    public bool? OffloadKvCacheToGpu { get; set; }
 }
 
